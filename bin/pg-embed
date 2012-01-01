@@ -1,0 +1,60 @@
+#!/bin/bash
+set -o errexit -o pipefail -o nounset
+
+d="$(pwd -P)"
+root="$d"/var
+
+function init_store {
+  initdb -D "$root"/db -A trust --locale en_US.UTF-8
+  sed -i '' \
+      "s|^#unix_socket_directory = ''|unix_socket_directory = '"$root"'|" \
+      "$root"/db/postgresql.conf
+}
+
+function create_db {
+  createuser -h "$root" embed --superuser
+  createdb -h "$root" embed "Local database."
+}
+
+function postgres_ {
+  postgres -D "$root"/db
+}
+
+function pg_ctl_ {
+  pg_ctl -D "$root"/db -l "$root"/log "$1"
+}
+
+function psql_ {
+  psql -h "$root" --dbname='user=embed dbname=embed'
+}
+
+function setup {
+  init_store
+  pg_ctl_ start
+  trap 'pg_ctl_ stop -m fast' EXIT
+  sleep 1
+  create_db
+}
+
+function connect {
+  idem_start
+  trap 'pg_ctl_ stop -m fast' EXIT
+  sleep 1
+  psql_
+}
+
+function is_running {
+  pg_ctl_ status | fgrep -q 'server is running'
+}
+
+function idem_start {
+  is_running || pg_ctl_ start
+}
+
+case "$1" in
+  init_store|create_db|postgres_|psql_|setup|connect) "$1" ;;
+  is_running|idem_start)        "$1" ;;
+  clean)                        rm -rf "$root" ;;
+  start|stop|status)            pg_ctl_ "$1" ;;
+esac
+
