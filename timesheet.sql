@@ -21,8 +21,25 @@ COMMENT ON TABLE timesheet.clock IS 'Hours worked for all clients.' ;
 
 CREATE VIEW     timesheet.hours AS
      SELECT     client,
-                div(EXTRACT(EPOCH FROM clockout - clockin) :: numeric, 60)
-                 AS minutes,
+                (clockout - clockin) AS interval,
                 clockin, clockout, tz, kind, remark
        FROM     timesheet.clock ;
+
+CREATE VIEW     timesheet.summary AS
+     SELECT     client,
+                to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS clockin,
+                to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS clockout,
+                tz,
+                to_char(interval, 'HH24h, MIm') AS interval,
+                kind, remark
+       FROM     timesheet.hours ;
+
+CREATE VIEW     timesheet.lines AS
+     SELECT     client,
+                tz,
+                kind,
+                clockin||' / '||clockout||' -- '||interval||' -- '||remark AS
+                  summary
+       FROM     timesheet.summary ;
+
 
