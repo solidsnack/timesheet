@@ -25,20 +25,26 @@ CREATE VIEW     timesheet.hours AS
                 clockin, clockout, tz, kind, remark
        FROM     timesheet.clock ;
 
-CREATE VIEW     timesheet.summary AS
+CREATE VIEW     timesheet.minutes AS
      SELECT     client,
-                to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS clockin,
-                to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS clockout,
-                tz,
-                to_char(interval, 'HH24h, MIm') AS interval,
-                kind, remark
+                (EXTRACT(EPOCH FROM interval) / 60)::int AS minutes,
+                clockin, clockout, tz, kind, remark
        FROM     timesheet.hours ;
 
-CREATE VIEW     timesheet.lines AS
+CREATE VIEW     timesheet.summary AS
      SELECT     client,
+                clockin, clockout,
+                minutes,
+                to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS i,
+                to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS o,
                 tz,
-                kind,
-                clockin||' / '||clockout||' -- '||interval||' -- '||remark AS
+                minutes / 60||'h, '||minutes % 60||'m' AS t,
+                kind, remark
+       FROM     timesheet.minutes ;
+
+CREATE VIEW     timesheet.lines AS
+     SELECT     *,
+                i||' / '||o||' -- '||t||' -- '||remark AS
                   summary
        FROM     timesheet.summary ;
 
