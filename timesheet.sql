@@ -38,7 +38,8 @@ CREATE VIEW     timesheet.summary AS
                 to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS i,
                 to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS o,
                 tz,
-                minutes / 60||'h, '||minutes % 60||'m' AS t,
+                to_char(minutes / 60, 'FM00') || 'h, ' ||
+                to_char(minutes % 60, 'FM00') || 'm'   AS t,
                 kind, remark
        FROM     timesheet.minutes ;
 
