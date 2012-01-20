@@ -31,21 +31,31 @@ CREATE VIEW     timesheet.minutes AS
                 clockin, clockout, tz, kind, remark
        FROM     timesheet.hours ;
 
+CREATE OR REPLACE FUNCTION timesheet.hours_and_minutes(interval)
+RETURNS text AS $$
+DECLARE
+  minutes int;
+BEGIN
+  minutes := EXTRACT(EPOCH FROM $1) / 60;
+  RETURN to_char(minutes / 60, 'FM00') || 'h, '
+      || to_char(minutes % 60, 'FM00') || 'm';
+END
+$$ LANGUAGE plpgsql STRICT;
+
 CREATE VIEW     timesheet.summary AS
      SELECT     client,
                 clockin, clockout,
-                minutes,
+                interval,
                 to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS i,
                 to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS o,
                 tz,
-                to_char(minutes / 60, 'FM00') || 'h, ' ||
-                to_char(minutes % 60, 'FM00') || 'm'   AS t,
+                timesheet.hours_and_minutes(interval) AS hours_and_minutes,
                 kind, remark
-       FROM     timesheet.minutes ;
+       FROM     timesheet.hours;
 
 CREATE VIEW     timesheet.lines AS
      SELECT     *,
-                i||' / '||o||' -- '||t||' -- '||remark AS
+                i||' / '||o||' -- '||hours_and_minutes||' -- '||remark AS
                   summary
        FROM     timesheet.summary ;
 
