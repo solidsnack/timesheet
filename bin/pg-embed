@@ -6,9 +6,11 @@ root="$d"/var
 
 function init_store {
   initdb -D "$root"/db -A trust --locale en_US.UTF-8
-  sed -i '' \
-      "s|^#unix_socket_directory = ''|unix_socket_directory = '"$root"'|" \
-      "$root"/db/postgresql.conf
+  sed -i '' "s|^#unix_socket_directory = .*$|unix_socket_directory = '"$root"'|
+             s|^datestyle = .*$|datestyle = 'iso, ymd'|
+             s|^#intervalstyle = .*$|intervalstyle = 'iso_8601'|
+             s|^#timezone = .*$|timezone = 'UTC'|
+            " "$root"/db/postgresql.conf
 }
 
 function create_db {
