@@ -16,7 +16,8 @@ CREATE TABLE    timesheet.clock
  -- tz          text REFERENCES pg_catalog.pg_timezone_names(name) NOT NULL,
     tz          text NOT NULL,
     kind        text REFERENCES timesheet.kind(name) DEFAULT '' NOT NULL,
-    remark      text DEFAULT '' NOT NULL );
+    remark      text DEFAULT '' NOT NULL,
+    CONSTRAINT non_negative_hours CHECK (clockin <= clockout) );
 COMMENT ON TABLE timesheet.clock IS 'Hours worked for all clients.' ;
 
 CREATE VIEW     timesheet.hours AS
