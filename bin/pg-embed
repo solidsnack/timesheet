@@ -51,10 +51,11 @@ function idem_start {
   is_running || pg_ctl_ start
 }
 
-case "$1" in
+case "${1:-}" in
+  '')                           connect ;;
   init_store|create_db|postgres_|psql_|setup|connect) "$1" ;;
   is_running|idem_start)        "$1" ;;
   clean)                        rm -rf "$root" ;;
-  start|stop|status)            pg_ctl_ "$1" ;;
+  start|stop|status)            pg_ctl_ "$@" ;;
 esac
 

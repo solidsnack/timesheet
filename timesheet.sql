@@ -22,35 +22,37 @@ COMMENT ON TABLE timesheet.clock IS 'Hours worked for all clients.' ;
 CREATE VIEW     timesheet.hours AS
      SELECT     client,
                 (clockout - clockin) AS interval,
+                EXTRACT(EPOCH FROM (clockout - clockin)) AS seconds,
                 clockin, clockout, tz, kind, remark
        FROM     timesheet.clock ;
 
-CREATE VIEW     timesheet.minutes AS
-     SELECT     client,
-                (EXTRACT(EPOCH FROM interval) / 60)::int AS minutes,
-                clockin, clockout, tz, kind, remark
-       FROM     timesheet.hours ;
-
-CREATE OR REPLACE FUNCTION timesheet.hours_and_minutes(interval)
+CREATE OR REPLACE FUNCTION timesheet.hours_and_minutes(double precision)
 RETURNS text AS $$
 DECLARE
-  minutes int;
+  minutes integer;
 BEGIN
-  minutes := EXTRACT(EPOCH FROM $1) / 60;
+  minutes := $1 / 60;
   RETURN to_char(minutes / 60, 'FM00') || 'h, '
       || to_char(minutes % 60, 'FM00') || 'm';
 END
 $$ LANGUAGE plpgsql STRICT;
 
+-- California overtime rules:
+--  * In a given day, the first 8 hours are straight-time, the next 4 are
+--    time-and-a-half and the remaining hours are double time.
+--  * Any hours in excess of 40 a week, not accounted for by daily over time,
+--    must be paid at time-and-a-half.
+--  * And then there is the 7th day time-and-a-half/double-time rule. On the
+--    7th consecutive day of work, the first 8 hours are time-and-a-half and
+--    any remaining hours are double-time.
+-- From: http://www.management-advantage.com/products/overtime-exempt.html
+
+
 CREATE VIEW     timesheet.summary AS
-     SELECT     client,
-                clockin, clockout,
-                interval,
+     SELECT     *,
                 to_char(clockin AT TIME ZONE tz, 'Mon DD HH24:MI') AS i,
                 to_char(clockout AT TIME ZONE tz, 'Mon DD HH24:MI') AS o,
-                tz,
-                timesheet.hours_and_minutes(interval) AS hours_and_minutes,
-                kind, remark
+                timesheet.hours_and_minutes(seconds) AS hours_and_minutes
        FROM     timesheet.hours;
 
 CREATE VIEW     timesheet.lines AS
