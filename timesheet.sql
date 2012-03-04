@@ -62,4 +62,19 @@ CREATE VIEW     timesheet.lines AS
                   summary
        FROM     timesheet.summary ;
 
+CREATE OR REPLACE FUNCTION timesheet.days_of_week
+  (start_date timestamp with time zone, weeks integer) -- TODO: add TZ
+RETURNS TABLE(day_num integer, day_start timestamp with time zone,
+                               day_end   timestamp with time zone) AS $$
+BEGIN
+  day_start := start_date;
+  FOR d IN 0..(weeks * 7) LOOP
+    day_num := d;
+    day_end := day_start + interval 'P1D';
+    RETURN NEXT;
+    day_start := day_end;
+  END LOOP;
+  RETURN;
+END
+$$ LANGUAGE plpgsql STRICT;
 
