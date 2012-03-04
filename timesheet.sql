@@ -78,3 +78,30 @@ BEGIN
 END
 $$ LANGUAGE plpgsql STRICT;
 
+CREATE OR REPLACE FUNCTION timesheet.interval_intersect
+  (a0 timestamp with time zone, a1 timestamp with time zone,
+   b0 timestamp with time zone, b1 timestamp with time zone)
+RETURNS interval AS $$
+DECLARE
+  i    interval;
+  zero interval := interval '0';
+  a0_  timestamp with time zone; -- The nearest point on b to a0
+  a1_  timestamp with time zone; -- The nearest point on b to a1
+BEGIN
+  CASE WHEN a0 < b0 THEN a0_ := b0;
+       WHEN a0 > b1 THEN a0_ := b1;
+                    ELSE a0_ := a0;
+  END CASE;
+  CASE WHEN a1 < b0 THEN a1_ := b0;
+       WHEN a1 > b1 THEN a1_ := b1;
+                    ELSE a1_ := a1;
+  END CASE;
+  -- Vector insight: The vector from a0 to a0_ on b, plus the interval vector
+  -- projected on to b, plus the vector from a1_ to a1, is equal to a.
+  i :=  (a1 - a0) - (a0_ - a0) - (a1 - a1_);
+  IF i < zero THEN RETURN zero;
+              ELSE RETURN i;
+  END IF;
+END
+$$ LANGUAGE plpgsql STRICT;
+
