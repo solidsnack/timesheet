@@ -98,7 +98,7 @@ BEGIN
   END CASE;
   -- Vector insight: The vector from a0 to a0_ on b, plus the interval vector
   -- projected on to b, plus the vector from a1_ to a1, is equal to a.
-  i :=  (a1 - a0) - (a0_ - a0) - (a1 - a1_);
+  i := (a1 - a0) - (a0_ - a0) - (a1 - a1_);
   IF i < zero THEN RETURN zero;
               ELSE RETURN i;
   END IF;
