@@ -5,12 +5,15 @@ d="$(pwd -P)"
 root="$d"/var
 
 function init_store {
+  local tmp=/tmp/pg-embed~"$whoami".$$
   initdb -D "$root"/db -A trust --locale en_US.UTF-8
-  sed -i '' "s|^#unix_socket_directory = .*$|unix_socket_directory = '"$root"'|
-             s|^datestyle = .*$|datestyle = 'iso, ymd'|
-             s|^#intervalstyle = .*$|intervalstyle = 'iso_8601'|
-             s|^#timezone = .*$|timezone = 'UTC'|
-            " "$root"/db/postgresql.conf
+  sed "s|^#unix_socket_directory = .*$|unix_socket_directory = '"$root"'|
+       s|^datestyle = .*$|datestyle = 'iso, ymd'|
+       s|^#intervalstyle = .*$|intervalstyle = 'iso_8601'|
+       s|^#timezone = .*$|timezone = 'UTC'|
+      " "$root"/db/postgresql.conf > "$tmp"
+  cat "$tmp" > "$root"/db/postgresql.conf
+  rm -f "$tmp"
 }
 
 function create_db {
