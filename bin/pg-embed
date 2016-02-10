@@ -5,9 +5,11 @@ d="$(pwd -P)"
 root="$d"/var
 
 function init_store {
-  local tmp=/tmp/pg-embed~"$whoami".$$
+  local tmp=/tmp/pg-embed~"$(whoami)".$$
   initdb -D "$root"/db -A trust --locale en_US.UTF-8
   sed "s|^#unix_socket_directory = .*$|unix_socket_directory = '"$root"'|
+       s|^#unix_socket_directories = .*$|unix_socket_directories = '"$root"'|
+       s|^#listen_addresses = .*$|listen_addresses = ''|
        s|^datestyle = .*$|datestyle = 'iso, ymd'|
        s|^#intervalstyle = .*$|intervalstyle = 'iso_8601'|
        s|^#timezone = .*$|timezone = 'UTC'|
@@ -37,8 +39,11 @@ function setup {
   init_store
   pg_ctl_ start
   trap 'pg_ctl_ stop -m fast' EXIT
-  sleep 1
+  tail -f "$root"/log &
+  sleep 2
   create_db
+  kill %1
+  wait %1 2>/dev/null
 }
 
 function connect {
